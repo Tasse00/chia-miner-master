@@ -4,6 +4,10 @@ import paramiko
 from dataclasses import dataclass
 import select
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 @dataclass
 class Host:
     name: str
@@ -36,12 +40,14 @@ class HostControl:
 
     def __init__(self, host: Host) -> None:
         self.host = host
+        self.logger = logging.getLogger(f'{__name__}.{self.host.name}')
+
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.client.connect(hostname=host.host, port=host.port, username=host.user, password=host.password)
 
     def exec(self, cmd: str, workspace: bool = True, env: bool = True):
-        print(f"H[{self.host.name}] CMD : "+cmd)
+        self.logger.debug(f"H[{self.host.name}] CMD : "+cmd)
         cmd_list = []
         if workspace:
             cmd_list.append(f"cd {self.host.workspace}")
@@ -51,7 +57,7 @@ class HostControl:
 
         _, stdout, stderr = self.client.exec_command(" && ".join(cmd_list))
         for line in stderr.readlines():
-            print(f"H[{self.host.name}] stderr < "+line, end="")
+            self.logger.debug(f"H[{self.host.name}] stderr < "+line, end="")
         return stdout.read().decode()
 
     def tail(self, filepath: str, n: int, BUF_SIZE: int):
@@ -62,7 +68,7 @@ class HostControl:
         channel.exec_command( 'killall tail')
         channel = transport.open_session()
         cmd =f'tail -n {n} -f "{filepath}"'
-        print(cmd)
+        self.logger.debug(cmd)
         channel.exec_command(cmd)
         buf = ""
         while transport.is_active():
@@ -71,7 +77,6 @@ class HostControl:
                 if len(rl) > 0:
                     new_buf = channel.recv(BUF_SIZE).decode()
                     if new_buf:
-                        print(new_buf)
                         buf += new_buf
                         while True:
                             nlpos = buf.find('\n')
@@ -83,8 +88,8 @@ class HostControl:
                             else:
                                 break
             except Exception as e:
-                print("stopped: " + e)
+                self.logger.debug("stopped: " + e)
 
     def __del__(self):
         self.client.close()
-        print("ssh closed")
+        self.logger.debug("ssh closed")

@@ -8,7 +8,7 @@ def get_mountpoint(part: str):
             return p.mountpoint
 
 
-def get_hdds():
+def get_hdds(ignore_root: bool = True):
 
     # 找到机械盘
     output = os.popen('lsblk -d -o name,rota | grep -v loop | grep -v " 0" | sed 1d')
@@ -32,6 +32,10 @@ def get_hdds():
 
     for disk in disks:
         if disk.fstype in ['squashfs']:
+            continue
+        if ignore_root and disk.mountpoint == '/':
+            continue
+        if disk.mountpoint.startswith("/boot"):
             continue
         if get_device_disk(disk.device) in devices:
             valid_disks.append(disk)
