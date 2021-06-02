@@ -117,12 +117,14 @@ def mine_status(host: Optional[str], hosts_file: str):
         
         # 插入间隔符
         # rows.append(['']*len(fields))
-        totals.append({"host": h.name, "plots_size": sum([hdd['plots_size'] for hdd in dat['hdds']])})
+        totals.append({ "host": h.name, "plots_size": sum([hdd['plots_size'] for hdd in dat['hdds']]), 
+                        "percent": (sum([hdd['used'] for hdd in dat['hdds']]) / sum([hdd['total'] for hdd in dat['hdds']]))})
     # rows = rows[:-1]
 
     table = terminaltables.AsciiTable(rows)
     print(table.table)
-    click.echo("   ".join([ f"[{t['host']}: {round(t['plots_size']/1024/1024/1024/1024, 2)}T]" for t in totals]))
+    click.echo("PLOT: " + "    ".join([ f"[{t['host']}: {round(t['plots_size']/1024/1024/1024/1024, 2)}T]" for t in totals]))
+    click.echo("USED: " + "   ".join([ f"[{t['host']}: {round(100 * t['percent'], 2)}%]" for t in totals]))
     click.echo(f"Total: {round(sum([t['plots_size'] for t in totals])/1024/1024/1024/1024, 2)}T")
 
 
