@@ -7,7 +7,7 @@ from .env import env
 from .device import device
 from .miner import miner
 
-@click.group(invoke_without_command=True)
+@click.group()
 def cli():
     pass
 
